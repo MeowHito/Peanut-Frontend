@@ -255,7 +255,7 @@ export default function GameDetailPage() {
                     ref={gameContainerRef}
                     className={`flex flex-col bg-background ${isAnyFullscreen
                         ? "fixed inset-0 z-50"
-                        : "md:mt-4 md:mx-4 md:border md:border-border"
+                        : "fixed inset-0 z-40 mt-14"
                         }`}
                 >
                     {/* Toolbar */}
@@ -290,11 +290,10 @@ export default function GameDetailPage() {
                             </button>
                         </div>
                     </div>
-                    {/* iframe — on mobile fills remaining viewport, on desktop uses 70vh */}
+                    {/* iframe fills all remaining space */}
                     <iframe
                         src={`${API_BASE}/games/${id}/play`}
-                        className={`w-full bg-white flex-1 ${isAnyFullscreen ? "" : "h-[calc(100vh-56px-40px)] md:h-[70vh]"
-                            }`}
+                        className="w-full bg-white flex-1"
                         title={game.title}
                         sandbox="allow-scripts allow-same-origin"
                         allow="fullscreen"
@@ -304,3 +303,4 @@ export default function GameDetailPage() {
         </div>
     );
 }
+
