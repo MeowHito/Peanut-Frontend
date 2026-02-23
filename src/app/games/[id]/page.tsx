@@ -296,7 +296,7 @@ export default function GameDetailPage() {
                         className="w-full bg-white flex-1"
                         title={game.title}
                         sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
-                        allow="fullscreen"
+                        allow="fullscreen; pointer-lock"
                     />
                 </div>
             )}
