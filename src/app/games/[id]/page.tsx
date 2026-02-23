@@ -295,7 +295,7 @@ export default function GameDetailPage() {
                         src={`${API_BASE}/games/${id}/play`}
                         className="w-full bg-white flex-1"
                         title={game.title}
-                        sandbox="allow-scripts allow-same-origin"
+                        sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
                         allow="fullscreen"
                     />
                 </div>
