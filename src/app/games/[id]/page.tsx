@@ -44,6 +44,7 @@ export default function GameDetailPage() {
     const [playing, setPlaying] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isCssFullscreen, setIsCssFullscreen] = useState(false);
     const gameContainerRef = useRef<HTMLDivElement>(null);
 
     const id = params.id as string;
@@ -66,18 +67,42 @@ export default function GameDetailPage() {
             document.removeEventListener("fullscreenchange", handleFullscreenChange);
     }, []);
 
+    // Lock body scroll when CSS fullscreen is active
+    useEffect(() => {
+        if (isCssFullscreen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [isCssFullscreen]);
+
+    const isAnyFullscreen = isFullscreen || isCssFullscreen;
+
     const toggleFullscreen = useCallback(async () => {
         if (!gameContainerRef.current) return;
-        try {
-            if (!document.fullscreenElement) {
-                await gameContainerRef.current.requestFullscreen();
-            } else {
-                await document.exitFullscreen();
-            }
-        } catch {
-            // Fullscreen not supported or denied
+
+        // If already in any fullscreen mode, exit
+        if (isFullscreen) {
+            try { await document.exitFullscreen(); } catch { }
+            return;
         }
-    }, []);
+        if (isCssFullscreen) {
+            setIsCssFullscreen(false);
+            return;
+        }
+
+        // Try native fullscreen first, fallback to CSS fullscreen
+        try {
+            await gameContainerRef.current.requestFullscreen();
+        } catch {
+            // Native fullscreen not supported (iOS Safari, etc.)
+            // Use CSS-based fullscreen instead
+            setIsCssFullscreen(true);
+        }
+    }, [isFullscreen, isCssFullscreen]);
 
     const handleDelete = async () => {
         if (!confirm("Are you sure you want to delete this game?")) return;
@@ -204,8 +229,8 @@ export default function GameDetailPage() {
                         <button
                             onClick={() => setPlaying(!playing)}
                             className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold transition-colors ${playing
-                                    ? "border border-border hover:bg-accent"
-                                    : "border border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                                ? "border border-border hover:bg-accent"
+                                : "border border-primary bg-primary text-primary-foreground hover:bg-primary/90"
                                 }`}
                         >
                             {playing ? (
@@ -228,31 +253,26 @@ export default function GameDetailPage() {
             {playing && (
                 <div
                     ref={gameContainerRef}
-                    className={`flex flex-col bg-background ${isFullscreen
-                            ? ""
-                            : "md:mt-4 md:mx-4 md:border md:border-border"
+                    className={`flex flex-col bg-background ${isAnyFullscreen
+                        ? "fixed inset-0 z-50"
+                        : "md:mt-4 md:mx-4 md:border md:border-border"
                         }`}
-                    style={
-                        isFullscreen
-                            ? { width: "100vw", height: "100vh" }
-                            : undefined
-                    }
                 >
                     {/* Toolbar */}
                     <div className="flex items-center justify-between border-b border-border bg-muted px-3 py-2 shrink-0">
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider truncate mr-2">
                             {game.title}
                         </span>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={toggleFullscreen}
-                                className="p-1.5 text-muted-foreground transition-colors hover:text-foreground"
-                                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                                className="p-2.5 md:p-1.5 text-muted-foreground transition-colors hover:text-foreground active:text-foreground rounded-md"
+                                title={isAnyFullscreen ? "Exit fullscreen" : "Fullscreen"}
                             >
-                                {isFullscreen ? (
-                                    <Minimize2 className="h-4 w-4" />
+                                {isAnyFullscreen ? (
+                                    <Minimize2 className="h-5 w-5 md:h-4 md:w-4" />
                                 ) : (
-                                    <Maximize2 className="h-4 w-4" />
+                                    <Maximize2 className="h-5 w-5 md:h-4 md:w-4" />
                                 )}
                             </button>
                             <button
@@ -260,19 +280,20 @@ export default function GameDetailPage() {
                                     if (document.fullscreenElement) {
                                         document.exitFullscreen();
                                     }
+                                    setIsCssFullscreen(false);
                                     setPlaying(false);
                                 }}
-                                className="p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+                                className="p-2.5 md:p-1.5 text-muted-foreground transition-colors hover:text-foreground active:text-foreground rounded-md"
                                 title="Close game"
                             >
-                                <X className="h-4 w-4" />
+                                <X className="h-5 w-5 md:h-4 md:w-4" />
                             </button>
                         </div>
                     </div>
                     {/* iframe — on mobile fills remaining viewport, on desktop uses 70vh */}
                     <iframe
                         src={`${API_BASE}/games/${id}/play`}
-                        className={`w-full bg-white flex-1 ${isFullscreen ? "" : "h-[calc(100vh-56px-40px)] md:h-[70vh]"
+                        className={`w-full bg-white flex-1 ${isAnyFullscreen ? "" : "h-[calc(100vh-56px-40px)] md:h-[70vh]"
                             }`}
                         title={game.title}
                         sandbox="allow-scripts allow-same-origin"
